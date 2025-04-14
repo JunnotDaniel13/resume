@@ -1,10 +1,188 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html lang="en" style="width:100%; height:100%;">
-<head>
-  <meta http-equiv="content-type" content="text/html; charset=utf-8">
-  <title>Junnot's Resume</title>
-</head>
-  <body style="width:100%; height:100%; margin:0;">
-    <iframe src="./junnot_resume_en.pdf" style="width:100%; height:100%;" frameborder="0"></iframe>
+<!DOCTYPE html PUBLIC "-
+<html lang="en" style="width: 100%; height: 100%">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>Junnot's Resume</title>
+    <style>
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      #language-switcher {
+        padding: 5px 10px;
+        background-color: #f0f0f0;
+        border-bottom: 1px solid #ccc;
+        text-align: right;
+        flex-shrink: 0;
+        display: none;
+      }
+      #language-switcher button {
+        margin-left: 5px;
+        padding: 3px 8px;
+        cursor: pointer;
+      }
+      #language-switcher button.active {
+        font-weight: bold;
+        background-color: #ddd;
+        border: 1px solid #bbb;
+      }
+      #resume-iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        flex-grow: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="language-switcher">
+      <span>Language:</span>
+      <button data-lang="en">English</button>
+      <button data-lang="fr">Français</button>
+      <button data-lang="es">Español</button>
+    </div>
+
+    <iframe id="resume-iframe" src="" title="Resume Document"></iframe>
+
+    <script>
+      const availableLanguages = {
+        en: {
+          name: "English",
+          file: "./junnot_resume_en.pdf",
+          title: "Junnot's Resume",
+        },
+        fr: {
+          name: "Français",
+          file: "./junnot_resume_fr.pdf",
+          title: "CV de Junnot",
+        },
+        es: {
+          name: "Español",
+          file: "./junnot_resume_es.pdf",
+          title: "CV de Junnot",
+        },
+      };
+      const defaultLang = "en";
+      const langQueryParam = "lang";
+
+      const iframe = document.getElementById("resume-iframe");
+      const langSwitcher = document.getElementById("language-switcher");
+      const buttons = langSwitcher.querySelectorAll("button[data-lang]");
+
+      function updateActiveButton(selectedLang) {
+        buttons.forEach((button) => {
+          if (button.getAttribute("data-lang") === selectedLang) {
+            button.classList.add("active");
+          } else {
+            button.classList.remove("active");
+          }
+        });
+      }
+
+      function setLanguageUI(langCode) {
+        const langConfig = availableLanguages[langCode];
+
+        if (!langConfig) {
+          console.warn(`Language '${langCode}' not configured. Using default.`);
+          setLanguageUI(defaultLang);
+          return;
+        }
+
+        if (iframe.getAttribute("src") !== langConfig.file) {
+          iframe.src = langConfig.file;
+        }
+
+        document.title = langConfig.title;
+
+        document.documentElement.lang = langCode;
+
+        updateActiveButton(langCode);
+
+        console.log(`UI updated for language: ${langCode}`);
+      }
+
+      function updateURL(langCode) {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set(langQueryParam, langCode);
+
+        history.pushState({ lang: langCode }, "", currentUrl.toString());
+      }
+
+      function getLangFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const lang = urlParams.get(langQueryParam);
+        return lang && availableLanguages[lang] ? lang : null;
+      }
+
+      function getInitialLanguage() {
+        const urlLang = getLangFromURL();
+        if (urlLang) {
+          console.log(`Language from URL: ${urlLang}`);
+          return urlLang;
+        }
+
+        const storedLang = localStorage.getItem("preferredLang");
+        if (storedLang && availableLanguages[storedLang]) {
+          console.log(`Language from localStorage: ${storedLang}`);
+          return storedLang;
+        }
+
+        const browserLang = (
+          navigator.language ||
+          navigator.userLanguage ||
+          defaultLang
+        ).split("-")[0];
+        if (availableLanguages[browserLang]) {
+          console.log(`Language from browser: ${browserLang}`);
+          return browserLang;
+        }
+
+        console.log(`Falling back to default language: ${defaultLang}`);
+        return defaultLang;
+      }
+
+      langSwitcher.addEventListener("click", (event) => {
+        if (event.target.tagName === "BUTTON" && event.target.dataset.lang) {
+          const selectedLang = event.target.dataset.lang;
+
+          setLanguageUI(selectedLang);
+
+          updateURL(selectedLang);
+
+          try {
+            localStorage.setItem("preferredLang", selectedLang);
+          } catch (e) {
+            console.warn("Could not save language preference to localStorage.");
+          }
+        }
+      });
+
+      window.addEventListener("popstate", (event) => {
+        console.log("Popstate event triggered");
+        const langFromState = event.state?.lang; 
+        const langFromUrl = getLangFromURL(); 
+        const targetLang = langFromState || langFromUrl || getInitialLanguage(); 
+
+        console.log(`State changed. Target language: ${targetLang}`);
+        setLanguageUI(targetLang);
+      });
+
+      
+      const initialLang = getInitialLanguage();
+      console.log(`Initial language determined: ${initialLang}`);
+
+      setLanguageUI(initialLang);
+
+      if (!getLangFromURL()) {
+        
+        const initialUrl = new URL(window.location.href);
+        initialUrl.searchParams.set(langQueryParam, initialLang);
+        history.replaceState({ lang: initialLang }, "", initialUrl.toString());
+        console.log(`Initial URL updated to reflect language: ${initialLang}`);
+      }
+    </script>
   </body>
 </html>
